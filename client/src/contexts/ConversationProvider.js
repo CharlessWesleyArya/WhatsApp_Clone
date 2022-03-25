@@ -1,23 +1,40 @@
-import React, {useContext} from 'react'
+import React, { useContext, useState } from 'react'
 import useLocalStorage from '../hooks/useLocalStorage'
+import { useContacts } from './ContactsProvider'
 
-const ConversationsContext=React.createContext()
+const ConversationsContext = React.createContext()
 
-export function useConversations(){
+export function useConversations() {
   return useContext(ConversationsContext)
 }
-export  function ConversationsProvider({children}) {
-  const [conversations,setConversations]=useLocalStorage('conversations',[])
-  function createConversations(recipients){
-    setConversations(prevConversations=>{
-      return [...prevConversations,{recipients,messages:[]}]
+export function ConversationsProvider({ children }) {
+  const [conversations, setConversations] = useLocalStorage('conversations', [])
+  const [slectedConversationIndex, setslectedConversationIndex] = useState(0)
+  const { contacts } = useContacts()
+
+  function createConversations(recipients) {
+    setConversations(prevConversations => {
+      return [...prevConversations, { recipients, messages: [] }]
     })
   }
-  const formattedConversations=conversations.map(conversations=>{
-    {}
+  const formattedConversations = conversations.map((conversation, index) => {
+    const recipients = conversation.recipients.map(recipient => {
+      const contact = contacts.find(contact => {
+        return contact.id === recipient
+      })
+      const name = (contact && contact.name) || recipient
+      return { id: recipient, name }
+    })
+    const selected = index === slectedConversationIndex
+    return { ...conversation, recipients, selected }
   })
+  const value = {
+    conversations: formattedConversations,
+    slectedConversationIndex: setslectedConversationIndex,
+    createConversations
+  }
   return (
-    <ConversationsContext.Provider value={{conversations,createConversations}}>
+    <ConversationsContext.Provider value={value}>
       {children}
     </ConversationsContext.Provider>
   )
